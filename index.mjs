@@ -26,7 +26,6 @@ function nextRoRTime(input) {
       0,
     ) - serverOffset;
 
-  // A time already passed today means the next occurrence is tomorrow.
   if (timestamp <= now.getTime()) {
     timestamp += 24 * 60 * 60 * 1000;
   }
@@ -50,6 +49,10 @@ client.once(Events.ClientReady, (readyClient) => {
   console.log(`Logged in as ${readyClient.user.tag}`);
 });
 
+client.on("error", (error) => {
+  console.error("Unreal Bot client error:", error);
+});
+
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
   if (interaction.commandName !== "unreal") return;
@@ -61,6 +64,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const time = interaction.options.getString("time", true).trim();
     const notify = interaction.options.getString("notify", true);
     const selectedRole = interaction.options.getRole("role");
+    const side = interaction.options.getString("side");
     const unix = nextRoRTime(time);
 
     if (!unix) {
@@ -73,6 +77,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
+    if (notify === "custom-role" && !selectedRole) {
+      await interaction.reply({
+        content:
+          "Choose a role in the `role` field when selecting “Choose a role”.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    await interaction.deferReply();
+
     let notification = "";
     let notifiedRoleId = null;
     let allowedParses = [];
@@ -83,26 +98,27 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     if (notify === "custom-role") {
-      if (!selectedRole) {
-        await interaction.reply({
-          content:
-            "Choose a role in the `role` field when selecting “Choose a role”.",
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
-      }
-
       notification = `${selectedRole}`;
       notifiedRoleId = selectedRole.id;
     }
 
     const serverTime = `${time.slice(0, 2)}:${time.slice(2)}`;
-    const prefix = notification ? `${notification} ` : "";
     const remaining = formatTimeRemaining(unix);
 
-    await interaction.reply({
+    const sideLabel =
+      side === "order"
+        ? "an Order"
+        : side === "destruction"
+          ? "a Destruction"
+          : "an Unreal";
+
+    const sideCircle =
+      side === "order" ? "🔵 " : side === "destruction" ? "🔴 " : "";
+
+    await interaction.editReply({
       content:
-        `**${prefix}${leader} is forming an Unreal RvR WB at <t:${unix}:t> · in ${remaining}**\n` +
+        `${notification ? `${notification}\n` : ""}` +
+        `**${sideCircle}${leader} is forming ${sideLabel} RvR WB at <t:${unix}:t> · in ${remaining}**\n` +
         `*Time shown in your local timezone. RoR server time: ${serverTime}.*`,
 
       allowedMentions: {
@@ -114,11 +130,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
   } catch (error) {
     console.error("Unreal Bot command error:", error);
 
-    if (!interaction.replied && !interaction.deferred) {
-      await interaction.reply({
-        content: "Something went wrong while creating that warband callout.",
-        flags: MessageFlags.Ephemeral,
-      });
+    if (error.code === 10062) return;
+
+    try {
+      if (interaction.deferred) {
+        await interaction.editReply(
+          "Something went wrong while creating that warband callout.",
+        );
+      } else if (!interaction.replied) {
+        await interaction.reply({
+          content: "Something went wrong while creating that warband callout.",
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    } catch (replyError) {
+      console.error("Could not send error response:", replyError);
     }
   }
 });

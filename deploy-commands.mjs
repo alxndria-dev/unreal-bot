@@ -36,6 +36,16 @@ const command = new SlashCommandBuilder()
           .setName("role")
           .setDescription("Role to notify when choosing a role")
           .setRequired(false),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("side")
+          .setDescription("Warband faction")
+          .setRequired(false)
+          .addChoices(
+            { name: "Order", value: "order" },
+            { name: "Destruction", value: "destruction" },
+          ),
       ),
   );
 
