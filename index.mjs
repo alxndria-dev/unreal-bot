@@ -26,7 +26,10 @@ function nextRoRTime(input) {
       0,
     ) - serverOffset;
 
-  if (timestamp <= now.getTime()) {
+  const isCurrentServerMinute =
+    serverNow.getUTCHours() === hour && serverNow.getUTCMinutes() === minute;
+
+  if (timestamp <= now.getTime() && !isCurrentServerMinute) {
     timestamp += 24 * 60 * 60 * 1000;
   }
 
@@ -36,6 +39,11 @@ function nextRoRTime(input) {
 function formatTimeRemaining(unix) {
   const remainingMs = unix * 1000 - Date.now();
   const totalMinutes = Math.max(0, Math.floor(remainingMs / 60_000));
+
+  if (totalMinutes === 0) {
+    return "NOW";
+  }
+
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 
@@ -91,6 +99,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const serverTime = `${time.slice(0, 2)}:${time.slice(2)}`;
     const remaining = formatTimeRemaining(unix);
 
+    const timeStatus = remaining === "NOW" ? "NOW" : `in ${remaining}`;
+
     const sideLabel =
       side === "order"
         ? "an Order"
@@ -104,7 +114,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await interaction.editReply({
       content:
         `${notification ? `${notification}\n` : ""}` +
-        `**${sideCircle}${leader} is forming ${sideLabel} RvR WB at <t:${unix}:t> · in ${remaining}**\n` +
+        `**${sideCircle}${leader} is forming ${sideLabel} RvR WB at <t:${unix}:t> · ${timeStatus}**\n` +
         `*Time shown in your local timezone. RoR server time: ${serverTime}.*`,
 
       allowedMentions: {
