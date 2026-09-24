@@ -39,6 +39,43 @@ const command = new SlashCommandBuilder()
   )
   .addSubcommand((subcommand) =>
     subcommand
+      .setName("group")
+      .setDescription("Create a first-come, first-served group")
+      .addStringOption((option) =>
+        option
+          .setName("title")
+          .setDescription("For example: SCs, PvE, Sc/Roam")
+          .setRequired(true)
+          .setMaxLength(100),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("time")
+          .setDescription("RoR server time, 24-hour format. Example: 2000")
+          .setRequired(true),
+      )
+      .addIntegerOption((option) =>
+        option
+          .setName("spaces")
+          .setDescription("Total party size, including you. Default: 6")
+          .setMinValue(2)
+          .setMaxValue(24)
+          .setRequired(false),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("role")
+          .setDescription("Your confirmed role. You can leave this unassigned")
+          .setRequired(false)
+          .addChoices(
+            { name: "Tank", value: "Tank" },
+            { name: "Healer", value: "Healer" },
+            { name: "DPS", value: "DPS" },
+          ),
+      ),
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
       .setName("link")
       .setDescription("Create an Unreal Discord invite for RoR chat")
       .addChannelOption((option) =>
