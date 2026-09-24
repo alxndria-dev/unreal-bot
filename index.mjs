@@ -58,13 +58,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.commandName !== "unreal") return;
 
   try {
+    if (!interaction.inGuild()) {
+      await interaction.reply({
+        content:
+          "Unreal Bot commands can only be used inside a Discord server.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
     if (interaction.options.getSubcommand() !== "wb") return;
 
     const leader = interaction.options.getUser("leader", true);
     const time = interaction.options.getString("time", true).trim();
-    const notify = interaction.options.getString("notify", true);
-    const selectedRole = interaction.options.getRole("role");
     const side = interaction.options.getString("side");
+    const notifyRole = interaction.options.getRole("notify");
     const unix = nextRoRTime(time);
 
     if (!unix) {
@@ -77,31 +85,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
-    if (notify === "custom-role" && !selectedRole) {
-      await interaction.reply({
-        content:
-          "Choose a role in the `role` field when selecting “Choose a role”.",
-        flags: MessageFlags.Ephemeral,
-      });
-      return;
-    }
-
     await interaction.deferReply();
 
-    let notification = "";
-    let notifiedRoleId = null;
-    let allowedParses = [];
-
-    if (notify === "everyone") {
-      notification = "@everyone";
-      allowedParses = ["everyone"];
-    }
-
-    if (notify === "custom-role") {
-      notification = `${selectedRole}`;
-      notifiedRoleId = selectedRole.id;
-    }
-
+    const notification = notifyRole ? `${notifyRole}` : "";
     const serverTime = `${time.slice(0, 2)}:${time.slice(2)}`;
     const remaining = formatTimeRemaining(unix);
 
@@ -122,14 +108,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
         `*Time shown in your local timezone. RoR server time: ${serverTime}.*`,
 
       allowedMentions: {
-        parse: allowedParses,
         users: [leader.id],
-        roles: notifiedRoleId ? [notifiedRoleId] : [],
+        roles: notifyRole ? [notifyRole.id] : [],
       },
     });
   } catch (error) {
     console.error("Unreal Bot command error:", error);
 
+    // Discord already received a response, commonly from a second bot process.
     if (error.code === 10062) return;
 
     try {

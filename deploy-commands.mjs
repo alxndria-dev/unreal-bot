@@ -22,23 +22,6 @@ const command = new SlashCommandBuilder()
       )
       .addStringOption((option) =>
         option
-          .setName("notify")
-          .setDescription("Who should be notified?")
-          .setRequired(true)
-          .addChoices(
-            { name: "@everyone", value: "everyone" },
-            { name: "No notification", value: "none" },
-            { name: "Choose a role", value: "custom-role" },
-          ),
-      )
-      .addRoleOption((option) =>
-        option
-          .setName("role")
-          .setDescription("Role to notify when choosing a role")
-          .setRequired(false),
-      )
-      .addStringOption((option) =>
-        option
           .setName("side")
           .setDescription("Warband faction")
           .setRequired(false)
@@ -46,14 +29,19 @@ const command = new SlashCommandBuilder()
             { name: "Order", value: "order" },
             { name: "Destruction", value: "destruction" },
           ),
+      )
+      .addRoleOption((option) =>
+        option
+          .setName("notify")
+          .setDescription("Role to notify. Leave blank for no notification")
+          .setRequired(false),
       ),
   );
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
 
-await rest.put(
-  Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
-  { body: [command.toJSON()] },
-);
+await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), {
+  body: [command.toJSON()],
+});
 
-console.log("Unreal command deployed.");
+console.log("Unreal global command deployed.");
