@@ -5,6 +5,9 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds],
 });
 
+const UNREAL_DISCORD_LINK =
+  '<LINK data="WEBLINK:https://discord.gg/GNAC8aGdq" text="Unreal Discord (click for link)" color="129,74,200">';
+
 function nextRoRTime(input) {
   const match = /^([01]\d|2[0-3])([0-5]\d)$/.exec(input);
 
@@ -66,16 +69,66 @@ client.on(Events.InteractionCreate, async (interaction) => {
   if (interaction.commandName !== "unreal") return;
 
   try {
+    const subcommand = interaction.options.getSubcommand();
+
+    if (subcommand === "link") {
+      if (!interaction.inGuild()) {
+        await interaction.reply({
+          content: "This command can only be used inside a Discord server.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      await interaction.deferReply({
+        flags: MessageFlags.Ephemeral,
+      });
+
+      const inviteChannelId = process.env.INVITE_CHANNEL_ID;
+
+      if (!inviteChannelId) {
+        await interaction.editReply(
+          "Invite links are not configured yet. Ask an admin to add `INVITE_CHANNEL_ID`.",
+        );
+        return;
+      }
+
+      const inviteChannel = await client.channels.fetch(inviteChannelId);
+
+      if (!inviteChannel || !("createInvite" in inviteChannel)) {
+        await interaction.editReply(
+          "The configured invite channel could not create an invite.",
+        );
+        return;
+      }
+
+      const invite = await inviteChannel.createInvite({
+        maxAge: 24 * 60 * 60, // expires after 24 hours
+        maxUses: 1, // one use only
+        unique: true,
+        reason: `Unreal link requested by ${interaction.user.tag}`,
+      });
+
+      const rorLink =
+        `<LINK data="WEBLINK:${invite.url}" ` +
+        `text="Unreal Discord (click for link)" color="129,74,200">`;
+
+      await interaction.editReply(
+        "Copy and paste this into Return of Reckoning chat:\n" +
+          `\`\`\`\n${rorLink}\n\`\`\``,
+      );
+      return;
+    }
+
+    if (subcommand !== "wb") return;
+
     if (!interaction.inGuild()) {
       await interaction.reply({
-        content:
-          "Unreal Bot commands can only be used inside a Discord server.",
+        content: "Warband callouts can only be used inside a Discord server.",
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
-
-    if (interaction.options.getSubcommand() !== "wb") return;
 
     const leader = interaction.options.getUser("leader", true);
     const time = interaction.options.getString("time", true).trim();
@@ -99,8 +152,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const serverTime = `${time.slice(0, 2)}:${time.slice(2)}`;
     const remaining = formatTimeRemaining(unix);
 
-    const timeStatus = remaining === "NOW" ? "NOW" : `in ${remaining}`;
-
     const sideLabel =
       side === "order"
         ? "an Order"
@@ -110,6 +161,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     const sideCircle =
       side === "order" ? "🔵 " : side === "destruction" ? "🔴 " : "";
+
+    const timeStatus = remaining === "NOW" ? "NOW" : `in ${remaining}`;
 
     await interaction.editReply({
       content:
@@ -125,7 +178,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
   } catch (error) {
     console.error("Unreal Bot command error:", error);
 
-    // Discord already received a response, commonly from a second bot process.
     if (error.code === 10062) return;
 
     try {
@@ -135,7 +187,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         );
       } else if (!interaction.replied) {
         await interaction.reply({
-          content: "Something went wrong while creating that warband callout.",
+          content: "Something went wrong while creating that command.",
           flags: MessageFlags.Ephemeral,
         });
       }

@@ -36,6 +36,11 @@ const command = new SlashCommandBuilder()
           .setDescription("Role to notify. Leave blank for no notification")
           .setRequired(false),
       ),
+  )
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName("link")
+      .setDescription("Get the Unreal Discord link for in-game chat"),
   );
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
@@ -44,4 +49,4 @@ await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), {
   body: [command.toJSON()],
 });
 
-console.log("Unreal global command deployed.");
+console.log("Unreal global commands deployed.");
