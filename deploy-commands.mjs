@@ -50,6 +50,20 @@ const command = new SlashCommandBuilder()
             ChannelType.GuildText,
             ChannelType.GuildAnnouncement,
           ),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("text")
+          .setDescription("Link text. Default: Unreal Discord (click for link)")
+          .setRequired(false)
+          .setMaxLength(100),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("colour")
+          .setDescription("RGB colour, for example: 129,74,200")
+          .setRequired(false)
+          .setMaxLength(11),
       ),
   );
 

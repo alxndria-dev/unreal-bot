@@ -102,9 +102,34 @@ client.on(Events.InteractionCreate, async (interaction) => {
         reason: `Unreal link requested by ${interaction.user.tag}`,
       });
 
+      const linkText =
+        interaction.options.getString("text")?.trim() ||
+        "Unreal Discord (click for link)";
+
+      const colourInput =
+        interaction.options.getString("colour")?.trim() || "129,74,200";
+
+      const colourMatch = /^(\d{1,3}),\s*(\d{1,3}),\s*(\d{1,3})$/.exec(
+        colourInput,
+      );
+
+      if (
+        !colourMatch ||
+        colourMatch.slice(1).some((value) => Number(value) > 255)
+      ) {
+        await interaction.reply({
+          content:
+            "Invalid colour. Use RGB values from 0 to 255, for example `129,74,200`.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      const colour = colourMatch.slice(1).join(",");
+
       const rorLink =
         `<LINK data="WEBLINK:${invite.url}" ` +
-        `text="Unreal Discord (click for link)" color="129,74,200">`;
+        `text="${linkText.replaceAll('"', "'")}" color="${colour}">`;
 
       await interaction.editReply(
         "Copy and paste this into Return of Reckoning chat:\n" +
