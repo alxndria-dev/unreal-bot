@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { REST, Routes, SlashCommandBuilder } from "discord.js";
+import { REST, Routes, SlashCommandBuilder, ChannelType } from "discord.js";
 
 const command = new SlashCommandBuilder()
   .setName("unreal")
@@ -40,7 +40,17 @@ const command = new SlashCommandBuilder()
   .addSubcommand((subcommand) =>
     subcommand
       .setName("link")
-      .setDescription("Get the Unreal Discord link for in-game chat"),
+      .setDescription("Create an Unreal Discord invite for RoR chat")
+      .addChannelOption((option) =>
+        option
+          .setName("channel")
+          .setDescription("Where new members should land")
+          .setRequired(true)
+          .addChannelTypes(
+            ChannelType.GuildText,
+            ChannelType.GuildAnnouncement,
+          ),
+      ),
   );
 
 const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);

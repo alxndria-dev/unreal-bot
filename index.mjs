@@ -71,6 +71,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     const subcommand = interaction.options.getSubcommand();
 
+    // LINK SUBCOMMAND START
     if (subcommand === "link") {
       if (!interaction.inGuild()) {
         await interaction.reply({
@@ -80,31 +81,23 @@ client.on(Events.InteractionCreate, async (interaction) => {
         return;
       }
 
+      const inviteChannel = interaction.options.getChannel("channel", true);
+
+      if (!("createInvite" in inviteChannel)) {
+        await interaction.reply({
+          content: "Choose a standard text channel for the invite.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
       await interaction.deferReply({
         flags: MessageFlags.Ephemeral,
       });
 
-      const inviteChannelId = process.env.INVITE_CHANNEL_ID;
-
-      if (!inviteChannelId) {
-        await interaction.editReply(
-          "Invite links are not configured yet. Ask an admin to add `INVITE_CHANNEL_ID`.",
-        );
-        return;
-      }
-
-      const inviteChannel = await client.channels.fetch(inviteChannelId);
-
-      if (!inviteChannel || !("createInvite" in inviteChannel)) {
-        await interaction.editReply(
-          "The configured invite channel could not create an invite.",
-        );
-        return;
-      }
-
       const invite = await inviteChannel.createInvite({
-        maxAge: 24 * 60 * 60, // expires after 24 hours
-        maxUses: 1, // one use only
+        maxAge: 24 * 60 * 60,
+        maxUses: 1,
         unique: true,
         reason: `Unreal link requested by ${interaction.user.tag}`,
       });
@@ -119,6 +112,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       );
       return;
     }
+    // LINK SUBCOMMAND END
 
     if (subcommand !== "wb") return;
 
