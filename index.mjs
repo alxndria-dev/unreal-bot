@@ -113,8 +113,9 @@ async function handleWarband(interaction) {
       (notifyRole ? String(notifyRole) + "\n" : "") +
       "**" +
       circle +
-      leader +
-      " is forming " +
+      "<@" +
+      leader.id +
+      "> is forming " +
       label +
       " RvR WB at <t:" +
       unix +
