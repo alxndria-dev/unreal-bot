@@ -43,6 +43,16 @@ const command = new SlashCommandBuilder()
       .setDescription("Create a first-come, first-served group")
       .addStringOption((option) =>
         option
+          .setName("faction")
+          .setDescription("Faction for this group")
+          .setRequired(true)
+          .addChoices(
+            { name: "Order", value: "order" },
+            { name: "Destruction", value: "destruction" },
+          ),
+      )
+      .addStringOption((option) =>
+        option
           .setName("title")
           .setDescription("For example: Evening SCs")
           .setRequired(true)

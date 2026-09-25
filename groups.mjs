@@ -48,6 +48,7 @@ async function getGroup(eventId) {
 
 function view(event, signups) {
   const remaining = event.capacity - signups.length;
+  const faction = event.faction === "order" ? "🔵 Order" : "🔴 Destruction";
 
   const roster =
     signups
@@ -65,7 +66,9 @@ function view(event, signups) {
     content:
       "**⚔️ " +
       event.title +
-      "**\n" +
+      "** · " +
+      faction +
+      "\n" +
       "<t:" +
       Math.floor(new Date(event.event_at).getTime() / 1000) +
       ":F>\n" +
@@ -159,21 +162,20 @@ export async function createGroup(interaction) {
   let event;
 
   const role = interaction.options.getString("your_role");
+  const faction = interaction.options.getString("faction", true);
 
   try {
     await connection.query("BEGIN");
 
     event = (
       await connection.query(
-        `INSERT INTO group_events
-          (guild_id, channel_id, creator_id, title, event_at, capacity)
-         VALUES ($1, $2, $3, $4, to_timestamp($5), $6)
-         RETURNING *`,
+        "INSERT INTO group_events (guild_id,channel_id,creator_id,title,faction,event_at,capacity) VALUES ($1,$2,$3,$4,$5,to_timestamp($6),$7) RETURNING *",
         [
           interaction.guildId,
           interaction.channelId,
           interaction.user.id,
           interaction.options.getString("title", true).trim(),
+          faction,
           unix,
           interaction.options.getInteger("spaces") ?? 6,
         ],
