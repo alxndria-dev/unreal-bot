@@ -92,7 +92,7 @@ function view(event, signups) {
           .setCustomId("group:join:" + event.id)
           .setLabel(
             remaining > 0 && event.status === "open"
-              ? "Join / update roles"
+              ? "Join / Update roles"
               : "Group full",
           )
           .setStyle(ButtonStyle.Primary)

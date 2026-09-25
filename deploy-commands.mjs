@@ -16,7 +16,7 @@ const command = new SlashCommandBuilder()
       )
       .addStringOption((option) =>
         option
-          .setName("time")
+          .setName("server_time")
           .setDescription("RoR server time, 24-hour format. Example: 2000")
           .setRequired(true),
       )
@@ -43,6 +43,13 @@ const command = new SlashCommandBuilder()
       .setDescription("Create a first-come, first-served group")
       .addStringOption((option) =>
         option
+          .setName("title")
+          .setDescription("For example: Evening SCs")
+          .setRequired(true)
+          .setMaxLength(100),
+      )
+      .addStringOption((option) =>
+        option
           .setName("faction")
           .setDescription("Faction for this group")
           .setRequired(true)
@@ -53,14 +60,7 @@ const command = new SlashCommandBuilder()
       )
       .addStringOption((option) =>
         option
-          .setName("title")
-          .setDescription("For example: Evening SCs")
-          .setRequired(true)
-          .setMaxLength(100),
-      )
-      .addStringOption((option) =>
-        option
-          .setName("time")
+          .setName("server_time")
           .setDescription("RoR server time, 24-hour format. Example: 2000")
           .setRequired(true),
       )
