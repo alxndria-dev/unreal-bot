@@ -7,7 +7,7 @@ import {
   UserSelectMenuBuilder,
 } from "discord.js";
 import { db } from "./db.mjs";
-import { nextRoRTime } from "./time.mjs";
+import { roRDateTime } from "./time.mjs";
 
 const ROLES = ["Tank", "Healer", "DPS"];
 
@@ -80,7 +80,8 @@ function view(event, signups) {
       " left · " +
       (event.status === "open" ? "Open" : "Closed") +
       "\n\n**Roster**\n" +
-      roster,
+      roster +
+      "\n\n",
 
     components: [
       new ActionRowBuilder().addComponents(
@@ -139,17 +140,25 @@ export async function createGroup(interaction) {
     throw new Error("Groups can only be created inside a Discord server.");
   }
 
-  const unix = nextRoRTime(interaction.options.getString("time", true).trim());
+  const unix = roRDateTime(
+    interaction.options.getString("date", true).trim(),
+    interaction.options.getString("time", true).trim(),
+  );
 
   if (!unix) {
     throw new Error(
-      "Invalid time. Use four RoR server-time digits, for example 2000.",
+      "Invalid date or time. Use date YYYY-MM-DD and time 24-hour RoR server format, for example 2026-09-25 and 2000.",
     );
+  }
+
+  if (unix <= Math.floor(Date.now() / 1000)) {
+    throw new Error("The group date and time must be in the future.");
   }
 
   const connection = await db.connect();
   let event;
-  const role = interaction.options.getString("role");
+
+  const role = interaction.options.getString("your_role");
 
   try {
     await connection.query("BEGIN");
@@ -345,6 +354,11 @@ export async function handleGroupComponent(interaction, client) {
                 : "Reopen signups",
             )
             .setStyle(ButtonStyle.Secondary),
+
+          new ButtonBuilder()
+            .setCustomId("group:cancel:" + eventId)
+            .setLabel("Cancel group")
+            .setStyle(ButtonStyle.Danger),
         ),
       ],
       flags: MessageFlags.Ephemeral,
@@ -383,6 +397,29 @@ export async function handleGroupComponent(interaction, client) {
 
     await interaction.update({
       content: "Signups are now " + status + ".",
+      components: [],
+    });
+    return true;
+  }
+
+  if (interaction.isButton() && action === "cancel") {
+    const current = await requireCreator(interaction, eventId);
+
+    await db.query("DELETE FROM group_events WHERE id = $1", [eventId]);
+
+    try {
+      const channel = await client.channels.fetch(current.event.channel_id);
+
+      if (channel?.isTextBased() && current.event.message_id) {
+        const message = await channel.messages.fetch(current.event.message_id);
+        await message.delete();
+      }
+    } catch (error) {
+      console.error("Could not delete cancelled group message:", error);
+    }
+
+    await interaction.update({
+      content: "Group cancelled and signup message deleted.",
       components: [],
     });
     return true;

@@ -44,7 +44,7 @@ const command = new SlashCommandBuilder()
       .addStringOption((option) =>
         option
           .setName("title")
-          .setDescription("For example: SCs, PvE, Sc/Roam")
+          .setDescription("For example: Evening SCs")
           .setRequired(true)
           .setMaxLength(100),
       )
@@ -52,6 +52,12 @@ const command = new SlashCommandBuilder()
         option
           .setName("time")
           .setDescription("RoR server time, 24-hour format. Example: 2000")
+          .setRequired(true),
+      )
+      .addStringOption((option) =>
+        option
+          .setName("date")
+          .setDescription("RoR server date in YYYY-MM-DD format")
           .setRequired(true),
       )
       .addIntegerOption((option) =>
@@ -64,8 +70,8 @@ const command = new SlashCommandBuilder()
       )
       .addStringOption((option) =>
         option
-          .setName("role")
-          .setDescription("Your confirmed role. You can leave this unassigned")
+          .setName("your_role")
+          .setDescription("Your role in this group. Leave blank if flexible")
           .setRequired(false)
           .addChoices(
             { name: "Tank", value: "Tank" },
