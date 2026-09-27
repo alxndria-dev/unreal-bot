@@ -1,3 +1,7 @@
+<img width="2110" height="745" alt="unreal bot banner" src="https://github.com/user-attachments/assets/c312c7da-2a3f-4d53-9107-11a96fc61343" />
+
+
+
 # Unreal Discord Bot
 #Stack
 - Discord
