@@ -3,7 +3,8 @@
 
 
 # Unreal Discord Bot
-#Stack
+### Stack
+- JS
 - Discord
 - Railway
 
