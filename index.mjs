@@ -1,6 +1,10 @@
 import "dotenv/config";
 import { Client, Events, GatewayIntentBits, MessageFlags } from "discord.js";
-import { createGroup, handleGroupComponent } from "./groups.mjs";
+import {
+  createGroup,
+  ensureGroupSchema,
+  handleGroupComponent,
+} from "./groups.mjs";
 import { formatTimeRemaining, nextRoRTime } from "./time.mjs";
 
 const client = new Client({
@@ -148,7 +152,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (
       interaction.isButton() ||
       interaction.isStringSelectMenu() ||
-      interaction.isUserSelectMenu()
+      interaction.isUserSelectMenu() ||
+      interaction.isModalSubmit()
     ) {
       await handleGroupComponent(interaction, client);
       return;
@@ -181,5 +186,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
   }
 });
+
+await ensureGroupSchema();
 
 client.login(process.env.DISCORD_TOKEN);

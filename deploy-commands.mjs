@@ -60,6 +60,13 @@ const command = new SlashCommandBuilder()
       )
       .addStringOption((option) =>
         option
+          .setName("description")
+          .setDescription("Extra details for this group")
+          .setRequired(false)
+          .setMaxLength(500),
+      )
+      .addStringOption((option) =>
+        option
           .setName("server_time")
           .setDescription("RoR server time, 24-hour format. Example: 2000. Default: now")
           .setRequired(false),

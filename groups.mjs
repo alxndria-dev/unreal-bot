@@ -3,13 +3,25 @@ import {
   ButtonBuilder,
   ButtonStyle,
   MessageFlags,
+  ModalBuilder,
   StringSelectMenuBuilder,
+  TextInputBuilder,
+  TextInputStyle,
   UserSelectMenuBuilder,
 } from "discord.js";
 import { db } from "./db.mjs";
 import { nowRoRTime, roRDateTime, todayRoRDate } from "./time.mjs";
 
 const ROLES = ["Tank", "Healer", "DPS"];
+const DESCRIPTION_LIMIT = 500;
+
+export async function ensureGroupSchema() {
+  await db.query(`
+    ALTER TABLE group_events
+      ADD COLUMN IF NOT EXISTS description text,
+      ADD COLUMN IF NOT EXISTS forming_now boolean NOT NULL DEFAULT false
+  `);
+}
 
 function rolesMenu(customId, max = 3) {
   return new ActionRowBuilder().addComponents(
@@ -62,6 +74,12 @@ function view(event, signups) {
       })
       .join("\n") || "No one has joined yet.";
 
+  const when =
+    "<t:" +
+    Math.floor(new Date(event.event_at).getTime() / 1000) +
+    ":F>" +
+    (event.forming_now ? " (forming now)" : "");
+
   return {
     content:
       "**⚔️ " +
@@ -69,9 +87,9 @@ function view(event, signups) {
       "** · " +
       faction +
       "\n" +
-      "<t:" +
-      Math.floor(new Date(event.event_at).getTime() / 1000) +
-      ":F>\n" +
+      when +
+      (event.description ? "\n" + event.description : "") +
+      "\n" +
       "**" +
       signups.length +
       "/" +
@@ -112,8 +130,73 @@ function view(event, signups) {
       ),
     ],
 
-    allowedMentions: { users: [] },
+    allowedMentions: { parse: [] },
   };
+}
+
+function manageView(event, notice) {
+  return {
+    content:
+      (notice || "Creator-only roster controls.") +
+      "\n\n**Description**\n" +
+      (event.description || "None yet."),
+    components: [
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId("group:add:" + event.id)
+          .setLabel("Add / reserve player")
+          .setStyle(ButtonStyle.Primary),
+
+        new ButtonBuilder()
+          .setCustomId("group:assign:" + event.id)
+          .setLabel("Assign role")
+          .setStyle(ButtonStyle.Secondary),
+
+        new ButtonBuilder()
+          .setCustomId("group:remove:" + event.id)
+          .setLabel("Remove player")
+          .setStyle(ButtonStyle.Danger),
+
+        new ButtonBuilder()
+          .setCustomId("group:toggle:" + event.id)
+          .setLabel(
+            event.status === "open" ? "Close signups" : "Reopen signups",
+          )
+          .setStyle(ButtonStyle.Secondary),
+
+        new ButtonBuilder()
+          .setCustomId("group:cancel:" + event.id)
+          .setLabel("Cancel group")
+          .setStyle(ButtonStyle.Danger),
+      ),
+      new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId("group:description:" + event.id)
+          .setLabel("Edit description")
+          .setStyle(ButtonStyle.Secondary),
+      ),
+    ],
+    allowedMentions: { parse: [] },
+  };
+}
+
+function descriptionModal(event) {
+  const input = new TextInputBuilder()
+    .setCustomId("description")
+    .setLabel("Description")
+    .setStyle(TextInputStyle.Paragraph)
+    .setRequired(false)
+    .setMaxLength(DESCRIPTION_LIMIT)
+    .setPlaceholder("Extra details for this group");
+
+  if (event.description) {
+    input.setValue(event.description.slice(0, DESCRIPTION_LIMIT));
+  }
+
+  return new ModalBuilder()
+    .setCustomId("group:description:" + event.id)
+    .setTitle("Edit description")
+    .addComponents(new ActionRowBuilder().addComponents(input));
 }
 
 async function refresh(client, eventId) {
@@ -183,9 +266,18 @@ export async function createGroup(interaction) {
     throw new Error("Groups can only be created inside a Discord server.");
   }
 
+  const dateInput = interaction.options.getString("date")?.trim();
+  const timeInput = interaction.options.getString("server_time")?.trim();
+  const formingNow = !dateInput && !timeInput;
+  const description =
+    interaction.options
+      .getString("description")
+      ?.trim()
+      .slice(0, DESCRIPTION_LIMIT) || null;
+
   const unix = roRDateTime(
-    interaction.options.getString("date")?.trim() || todayRoRDate(),
-    interaction.options.getString("server_time")?.trim() || nowRoRTime(),
+    dateInput || todayRoRDate(),
+    timeInput || nowRoRTime(),
   );
 
   if (!unix) {
@@ -209,7 +301,7 @@ export async function createGroup(interaction) {
 
     event = (
       await connection.query(
-        "INSERT INTO group_events (guild_id,channel_id,creator_id,title,faction,event_at,capacity) VALUES ($1,$2,$3,$4,$5,to_timestamp($6),$7) RETURNING *",
+        "INSERT INTO group_events (guild_id,channel_id,creator_id,title,faction,event_at,capacity,description,forming_now) VALUES ($1,$2,$3,$4,$5,to_timestamp($6),$7,$8,$9) RETURNING *",
         [
           interaction.guildId,
           interaction.channelId,
@@ -218,6 +310,8 @@ export async function createGroup(interaction) {
           faction,
           unix,
           interaction.options.getInteger("spaces") ?? 6,
+          description,
+          formingNow,
         ],
       )
     ).rows[0];
@@ -370,41 +464,41 @@ export async function handleGroupComponent(interaction, client) {
     const current = await requireCreator(interaction, eventId);
 
     await interaction.reply({
-      content: "Creator-only roster controls.",
-      components: [
-        new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId("group:add:" + eventId)
-            .setLabel("Add / reserve player")
-            .setStyle(ButtonStyle.Primary),
-
-          new ButtonBuilder()
-            .setCustomId("group:assign:" + eventId)
-            .setLabel("Assign role")
-            .setStyle(ButtonStyle.Secondary),
-
-          new ButtonBuilder()
-            .setCustomId("group:remove:" + eventId)
-            .setLabel("Remove player")
-            .setStyle(ButtonStyle.Danger),
-
-          new ButtonBuilder()
-            .setCustomId("group:toggle:" + eventId)
-            .setLabel(
-              current.event.status === "open"
-                ? "Close signups"
-                : "Reopen signups",
-            )
-            .setStyle(ButtonStyle.Secondary),
-
-          new ButtonBuilder()
-            .setCustomId("group:cancel:" + eventId)
-            .setLabel("Cancel group")
-            .setStyle(ButtonStyle.Danger),
-        ),
-      ],
+      ...manageView(current.event),
       flags: MessageFlags.Ephemeral,
     });
+    return true;
+  }
+
+  if (interaction.isButton() && action === "description") {
+    const current = await requireCreator(interaction, eventId);
+
+    await interaction.showModal(descriptionModal(current.event));
+    return true;
+  }
+
+  if (interaction.isModalSubmit() && action === "description") {
+    const current = await requireCreator(interaction, eventId);
+    const description =
+      interaction.fields
+        .getTextInputValue("description")
+        .trim()
+        .slice(0, DESCRIPTION_LIMIT) || null;
+
+    await db.query("UPDATE group_events SET description = $1 WHERE id = $2", [
+      description,
+      eventId,
+    ]);
+
+    current.event.description = description;
+    await refresh(client, eventId);
+
+    await interaction.update(
+      manageView(
+        current.event,
+        description ? "Description saved." : "Description cleared.",
+      ),
+    );
     return true;
   }
 
