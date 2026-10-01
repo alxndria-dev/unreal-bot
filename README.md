@@ -1,9 +1,14 @@
+<img width="2110" height="745" alt="unreal bot banner" src="https://github.com/user-attachments/assets/c312c7da-2a3f-4d53-9107-11a96fc61343" />
+
+
+
 # Unreal Discord Bot
-## Stack
+### Stack
+- JS
 - Discord
 - Railway
 
-# Unreal Bot Guide
+# Guide
 
 The Unreal Bot helps us organise warbands, groups, and Discord links without chasing people through chat. Commands use RoR server time where requested, while Discord displays event times in each person’s local timezone.
 
@@ -19,6 +24,8 @@ Use it when you are forming an RvR warband and want to clearly show the leader, 
 - Notify: optional Discord role to ping
 
 Example: ```/unreal wb leader:@Brodda time:2000 side:Destruction```
+
+https://github.com/user-attachments/assets/2c07eaed-f63a-44b9-872c-60921554e37e
 
 ## /unreal group
 
@@ -36,6 +43,8 @@ Members choose every role they can play, but always occupy only one space. The g
 Example:
 ```/unreal group faction:Destruction title:"Evening SCs" date:2026-09-26 time:2000 spaces:6 your_role:Healer```
 
+https://github.com/user-attachments/assets/a945baa0-42c9-4577-92bc-edae6b56d711
+
 ## /unreal link
 
 Create a one-use Discord invite link formatted for Return of Reckoning chat viewable only to you.
@@ -46,3 +55,8 @@ Create a one-use Discord invite link formatted for Return of Reckoning chat view
 - Colour: optional RGB colour, e.g. 129,74,200
 
 The bot gives you a ready-to-copy RoR chat link. 
+
+
+https://github.com/user-attachments/assets/a11045de-9896-4b8b-a0a7-9aa1bbe452f2
+
+
