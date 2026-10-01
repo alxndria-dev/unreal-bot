@@ -91,12 +91,14 @@ function view(event, signups) {
         new ButtonBuilder()
           .setCustomId("group:join:" + event.id)
           .setLabel(
-            remaining > 0 && event.status === "open"
-              ? "Join / Update roles"
-              : "Group full",
+            event.status === "open"
+              ? remaining > 0
+                ? "Join / Update roles"
+                : "Update roles"
+              : "Signups closed",
           )
           .setStyle(ButtonStyle.Primary)
-          .setDisabled(remaining <= 0 || event.status !== "open"),
+          .setDisabled(event.status !== "open"),
 
         new ButtonBuilder()
           .setCustomId("group:leave:" + event.id)
