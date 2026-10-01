@@ -117,15 +117,53 @@ function view(event, signups) {
 async function refresh(client, eventId) {
   const current = await getGroup(eventId);
 
-  if (!current?.event.message_id) return;
+  if (!current?.event.message_id) {
+    console.warn(`Group ${eventId} has no message_id`);
+    return;
+  }
 
-  const channel = await client.channels.fetch(current.event.channel_id);
+  try {
+    const channel = await client.channels.fetch(current.event.channel_id);
 
-  if (!channel?.isTextBased()) return;
+    if (!channel?.isTextBased()) {
+      throw new Error(
+        `Group channel ${current.event.channel_id} is not text based or no longer exists.`,
+      );
+    }
 
-  const message = await channel.messages.fetch(current.event.message_id);
+    // Log exactly what Discord thinks the bot can do here.
+    if ("guild" in channel && channel.guild) {
+      const me = channel.guild.members.me;
+      const permissions = channel.permissionsFor(me);
 
-  await message.edit(view(current.event, current.signups));
+      console.log(`Refreshing group ${eventId}`, {
+        guildId: current.event.guild_id,
+        channelId: current.event.channel_id,
+        messageId: current.event.message_id,
+        botId: client.user.id,
+        viewChannel: permissions?.has("ViewChannel"),
+        sendMessages: permissions?.has("SendMessages"),
+        readMessageHistory: permissions?.has("ReadMessageHistory"),
+      });
+    }
+
+    const message = await channel.messages.fetch(
+      current.event.message_id,
+    );
+
+    await message.edit(view(current.event, current.signups));
+  } catch (error) {
+    console.error(`Failed to refresh group ${eventId}`, {
+      guildId: current.event.guild_id,
+      channelId: current.event.channel_id,
+      messageId: current.event.message_id,
+      code: error.code,
+      status: error.status,
+      message: error.message,
+    });
+
+    throw error;
+  }
 }
 
 async function requireCreator(interaction, eventId) {
