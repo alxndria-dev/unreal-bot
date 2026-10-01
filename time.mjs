@@ -47,6 +47,11 @@ export function nextRoRTime(input) {
   return Math.floor(timestamp / 1000);
 }
 
+export function roRDay(dateInput) {
+  // Noon keeps Discord's local date on the same RoR calendar day.
+  return roRDateTime(dateInput, "1200");
+}
+
 export function roRDateTime(dateInput, timeInput) {
   const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateInput);
   const timeMatch = /^([01]\d|2[0-3])([0-5]\d)$/.exec(timeInput);

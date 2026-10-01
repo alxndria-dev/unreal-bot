@@ -68,7 +68,9 @@ const command = new SlashCommandBuilder()
       .addStringOption((option) =>
         option
           .setName("server_time")
-          .setDescription("RoR server time, 24-hour format. Example: 2000. Default: now")
+          .setDescription(
+            "24-hour RoR time, e.g. 2000. Blank: now, or TBC if a date is set",
+          )
           .setRequired(false),
       )
       .addStringOption((option) =>

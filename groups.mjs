@@ -10,7 +10,7 @@ import {
   UserSelectMenuBuilder,
 } from "discord.js";
 import { db } from "./db.mjs";
-import { nowRoRTime, roRDateTime, todayRoRDate } from "./time.mjs";
+import { nowRoRTime, roRDateTime, roRDay, todayRoRDate } from "./time.mjs";
 
 const ROLES = ["Tank", "Healer", "DPS"];
 const DESCRIPTION_LIMIT = 500;
@@ -19,7 +19,8 @@ export async function ensureGroupSchema() {
   await db.query(`
     ALTER TABLE group_events
       ADD COLUMN IF NOT EXISTS description text,
-      ADD COLUMN IF NOT EXISTS forming_now boolean NOT NULL DEFAULT false
+      ADD COLUMN IF NOT EXISTS forming_now boolean NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS time_tbc boolean NOT NULL DEFAULT false
   `);
 }
 
@@ -74,11 +75,10 @@ function view(event, signups) {
       })
       .join("\n") || "No one has joined yet.";
 
-  const when =
-    "<t:" +
-    Math.floor(new Date(event.event_at).getTime() / 1000) +
-    ":F>" +
-    (event.forming_now ? " (forming now)" : "");
+  const unix = Math.floor(new Date(event.event_at).getTime() / 1000);
+  const when = event.time_tbc
+    ? "<t:" + unix + ":D> (time TBC)"
+    : "<t:" + unix + ":F>" + (event.forming_now ? " (forming now)" : "");
 
   return {
     content:
@@ -269,16 +269,16 @@ export async function createGroup(interaction) {
   const dateInput = interaction.options.getString("date")?.trim();
   const timeInput = interaction.options.getString("server_time")?.trim();
   const formingNow = !dateInput && !timeInput;
+  const timeTbc = Boolean(dateInput) && !timeInput;
   const description =
     interaction.options
       .getString("description")
       ?.trim()
       .slice(0, DESCRIPTION_LIMIT) || null;
 
-  const unix = roRDateTime(
-    dateInput || todayRoRDate(),
-    timeInput || nowRoRTime(),
-  );
+  const unix = timeTbc
+    ? roRDay(dateInput)
+    : roRDateTime(dateInput || todayRoRDate(), timeInput || nowRoRTime());
 
   if (!unix) {
     throw new Error(
@@ -286,7 +286,10 @@ export async function createGroup(interaction) {
     );
   }
 
-  if (unix + 60 <= Math.floor(Date.now() / 1000)) {
+  const pastDay = timeTbc && dateInput < todayRoRDate();
+  const pastTime = !timeTbc && unix + 60 <= Math.floor(Date.now() / 1000);
+
+  if (pastDay || pastTime) {
     throw new Error("The group date and time must be in the future.");
   }
 
@@ -301,7 +304,7 @@ export async function createGroup(interaction) {
 
     event = (
       await connection.query(
-        "INSERT INTO group_events (guild_id,channel_id,creator_id,title,faction,event_at,capacity,description,forming_now) VALUES ($1,$2,$3,$4,$5,to_timestamp($6),$7,$8,$9) RETURNING *",
+        "INSERT INTO group_events (guild_id,channel_id,creator_id,title,faction,event_at,capacity,description,forming_now,time_tbc) VALUES ($1,$2,$3,$4,$5,to_timestamp($6),$7,$8,$9,$10) RETURNING *",
         [
           interaction.guildId,
           interaction.channelId,
@@ -312,6 +315,7 @@ export async function createGroup(interaction) {
           interaction.options.getInteger("spaces") ?? 6,
           description,
           formingNow,
+          timeTbc,
         ],
       )
     ).rows[0];
