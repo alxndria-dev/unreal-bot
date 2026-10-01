@@ -7,7 +7,7 @@ import {
   UserSelectMenuBuilder,
 } from "discord.js";
 import { db } from "./db.mjs";
-import { roRDateTime } from "./time.mjs";
+import { nowRoRTime, roRDateTime, todayRoRDate } from "./time.mjs";
 
 const ROLES = ["Tank", "Healer", "DPS"];
 
@@ -184,8 +184,8 @@ export async function createGroup(interaction) {
   }
 
   const unix = roRDateTime(
-    interaction.options.getString("date", true).trim(),
-    interaction.options.getString("time", true).trim(),
+    interaction.options.getString("date")?.trim() || todayRoRDate(),
+    interaction.options.getString("server_time")?.trim() || nowRoRTime(),
   );
 
   if (!unix) {
@@ -194,7 +194,7 @@ export async function createGroup(interaction) {
     );
   }
 
-  if (unix <= Math.floor(Date.now() / 1000)) {
+  if (unix + 60 <= Math.floor(Date.now() / 1000)) {
     throw new Error("The group date and time must be in the future.");
   }
 

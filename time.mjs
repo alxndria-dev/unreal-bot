@@ -1,3 +1,23 @@
+function roRServerNow() {
+  return new Date(Date.now() + 2 * 60 * 60 * 1000);
+}
+
+export function todayRoRDate() {
+  const serverNow = roRServerNow();
+  const month = String(serverNow.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(serverNow.getUTCDate()).padStart(2, "0");
+
+  return serverNow.getUTCFullYear() + "-" + month + "-" + day;
+}
+
+export function nowRoRTime() {
+  const serverNow = roRServerNow();
+  const hour = String(serverNow.getUTCHours()).padStart(2, "0");
+  const minute = String(serverNow.getUTCMinutes()).padStart(2, "0");
+
+  return hour + minute;
+}
+
 export function nextRoRTime(input) {
   const match = /^([01]\d|2[0-3])([0-5]\d)$/.exec(input);
   if (!match) return null;
